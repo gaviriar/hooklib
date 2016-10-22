@@ -196,6 +196,29 @@ class gitprereceiveinputparser(gitreceiveinputparser)
 ...
 ```
 
+Bugzilla 5.0 API
+-
+To develop on the Bugzilla API you will need to add a secrets.py file in this project directory which contains your user specific login details and domain URL which will be used for testing and eventually usage of this extension.
+
+Adding Bugzilla.py file which contains work in progress class which can interface with the Bugzilla 5.0 API for getting bug status's and updating bug data. 
+
+The goal of this is to eventually create a precommit hook which can update teh status of a bug automatically from a commit message. To in crease developer productivity. 
+
+There once was such an extension for mercurial but unfortunately it seems to be broken when using the Bugzilla 5.0 or later.
+
+Your secrets.py file should look like this: 
+
+```
+secrets = {
+    'USERNAME': 'foo.bar@gmail.com',
+    'PASSWORD': 'foobar123',
+    'BUGZILLA_URL': 'https://landfill.bugzilla.org/bugzilla-5.0-branch/'
+    }
+```
+
+Note: if you would like to do some testing, you can create a test account at https://landfill.bugzilla.org
+
+
 Contributing
 -
 Before sending a Pull Request please run the tests:
