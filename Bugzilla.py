@@ -1,5 +1,6 @@
 import requests as req
 from flask.globals import request
+from findertools import comment
 # Logging in through API
 def DEBUG(xxx):
     print xxx
@@ -40,11 +41,14 @@ class Bugzilla(object):
         respones from a GET request to that bug
         """
         self._bug_id = str(bug_id)
-        rel_bug_path = req.compat.urljoin('bug/', self._bug_id)
-        self._bug_url = req.compat.urljoin(self._bzUrl, rel_bug_path)
+        endpoint_url = '/'.join(['bug', self._bug_id])
+        self._bug_url = req.compat.urljoin(self._bzUrl, endpoint_url)
         DEBUG(self._bug_url)        
 
     def bug(self):
+        """
+        Returns the GET response from bug_id
+        """
         params = {}
         params.update(self._token)
         res = req.get(self._bug_url, params, timeout=Bugzilla.timeout)
@@ -66,14 +70,30 @@ class Bugzilla(object):
         elif valeo_status == 'tested':
             return 'tested'
 
-    def comment(self,bug_id, comment='', work_time=-1):
+    def comment(self, comment = None, bug_id = None, work_time=-1):
         """
         Update comment on bug
         @todo: Need to be able to parse changeset to add to comment
         @todo: Check comment and verify bug_id is there and additional info
         """
-        self.bug(bug_id)
-        url = req.compat.urljoin(self.bug_url, 'comment')
+        if bug_id:
+            self.bug_id = bug_id
+        
+        if comment['comment']:
+            ept_url = '/'.join(['bug', self._bug_id, 'comment'])
+            url = req.compat.urljoin(self._bzUrl, ept_url)
+            DEBUG(self._bzUrl)
+            DEBUG(ept_url)
+            DEBUG('Login_url: ' + url)
+            comment.update(self._token)
+            res = req.post(url, comment)
+            self.is_bug_error(res.json())
+            return res
+        else: 
+           ERROR('The comment is invalid')
+           return False 
+        
+        # This is dead code
         # Set the desired fields to update
         params = dict()
         params['comment'] = comment
@@ -83,7 +103,6 @@ class Bugzilla(object):
             params['work_time'] = work_time
         else:
             print 'You did not specify a work time'
-
         # Add the access token to params
         params.update(self._token)
         print url
@@ -95,7 +114,7 @@ class Bugzilla(object):
     def update(self, bug_id, comment, work_time=-1, status=False):
         # change bug status
         bug(bug_id)
-        url = req.compat.urljoin(self.bug_url,'bug/')
+        url = req.compat.urljoin(self._bug_url,'bug/')
         # Set the desired fields to update
         params = dict()
         params['comment'] = {'body': comment, 'is_private': False, 'is_markdown': False}
@@ -111,14 +130,16 @@ class Bugzilla(object):
         else:
             return True
 
-    def is_closed(bug_id):
+    def is_closed(self, bug_id):
         bug(bug_id)
         url = req.compat.urljoin(self.bug_url, 'bug')
 
-    def is_bug_error(res):
+    def is_bug_error(self,res):
         ret = False
-        if res in comment_errs:
-            raise Exception('Bug Error:', res)
+        if res['code']:
+            if res in self.comment_errs:
+                DEBUG('Is Error')
+                raise Exception('Bug Error:', res)
 #         except Exception as inst:
 #             txt, err = inst.args
 #             print txt + ' ' + err
@@ -139,8 +160,15 @@ if __name__ == '__main__':
         print login_res
         bz.bug_id = BUG
         #print bz.bug_id
-        res = bz.bug()
-        print res.json()
+        #res = bz.bug()
+        
+        #print res.json()
+        # Comment Test
+        comment = {}
+        comment['comment'] = 'This is a test comment from the Buzzilla Python class'
+        res = bz.comment(comment)
+        print res.content
+        
 #         print bz.comment(BUG, comment='Helo commenting from the Bugzilla Class').json()
     else: 
         print 'Failed login'
