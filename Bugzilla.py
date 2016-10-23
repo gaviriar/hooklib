@@ -87,8 +87,8 @@ class Bugzilla(object):
             DEBUG('Login_url: ' + url)
             comment.update(self._token)
             res = req.post(url, comment)
-            self.is_bug_error(res.json())
-            return res
+            
+            return res, self.is_bug_error(res.json())
         else: 
            ERROR('The comment is invalid')
            return False 
@@ -125,25 +125,32 @@ class Bugzilla(object):
         # Add the access token to params
         params.update(login_params)
         res = req.put(url, params, timeout=Bugzilla.timeout)
-        if is_bug_error(res):
-            return False, is_bug_error(res)
-        else:
-            return True
+        return is_bug_error(res)
 
     def is_closed(self, bug_id):
         bug(bug_id)
         url = req.compat.urljoin(self.bug_url, 'bug')
 
-    def is_bug_error(self,res):
+    def is_bug_error(self,res_dict):
+        """
+        Returns true if the input res_dictponse (dictionary) 
+        contains a code key which indicates that an 
+        error occured in the REST request
+        :res_dict The response from the HTTP request when 
+        converted to json e.g. res.json()
+        :return True if error response, False otherwise
+        """
         ret = False
-        if res['code']:
-            if res in self.comment_errs:
+        if 'code' in res_dict.keys():
+            if res_dict['code'] in self.comment_errs:
                 DEBUG('Is Error')
-                raise Exception('Bug Error:', res)
+                raise Exception('Bug Error:', res_dict)
+                return True
 #         except Exception as inst:
 #             txt, err = inst.args
 #             print txt + ' ' + err
 #         return ret
+        return False
 
     # Ability to get a list of comments for a bug specified?
 if __name__ == '__main__':
