@@ -1,0 +1,15 @@
+#36912
+
+# Repository
+- lsAlg - 1322asd9873
+
+This is an example comment which would generally be in a mercurial commit
+as you can see there are newlines used to break long lines but we in fact 
+want the lines followed by new lines which are not empty to be considered 
+as a whole line when commiting to bugzilla and allow bugzilla to do the 
+formatting as it wishes.
+
+Anything followed by an empty new line should actually be considered as a newline
+
+- This is a point
+- This is a second point

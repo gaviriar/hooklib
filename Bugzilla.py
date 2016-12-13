@@ -1,6 +1,7 @@
 import requests as req
 from flask.globals import request
 from findertools import comment
+from IPython.utils._sysinfo import commit
 # Logging in through API
 def DEBUG(xxx):
     print xxx
@@ -86,6 +87,8 @@ class Bugzilla(object):
             DEBUG(ept_url)
             DEBUG('Login_url: ' + url)
             comment.update(self._token)
+            DEBUG(url)
+            DEBUG(comment)
             res = req.post(url, comment)
             
             return res, self.is_bug_error(res.json())
@@ -112,6 +115,10 @@ class Bugzilla(object):
         return res
 
     def update(self, bug_id, comment, work_time=-1, status=False):
+        """
+        A very similar function to comment() above except.
+        Need to verify wether we need this function at all.... for now untested
+        """
         # change bug status
         bug(bug_id)
         url = req.compat.urljoin(self._bug_url,'bug/')
@@ -152,7 +159,21 @@ class Bugzilla(object):
 #         return ret
         return False
 
-    # Ability to get a list of comments for a bug specified?
+import re
+def parseCommitMessage(hg_msg):
+    """
+    Function which parses mercurial commit 
+    messages to obtain bug id and reformat 
+    the text removing any new lines
+    """
+    patt = re.compile('(#)([0-9]+)')
+    match = patt.search(hg_msg)
+    
+    if match:
+        return match.group(2), hg_msg
+    else:
+        return False
+    # Ability to get a list of c1omments for a bug specified?
 if __name__ == '__main__':
     from secrets import *
     LOGIN_PARAMS = {
@@ -163,18 +184,22 @@ if __name__ == '__main__':
     bz = Bugzilla(BUGZILLA_URL)
     login_res = bz.login(LOGIN_PARAMS['login'], LOGIN_PARAMS['password'])
     BUG = 36912
+    with open('hg_comment.txt', 'r') as f:
+        commit_message = f.read()
+        
     if login_res:
         print login_res
-        bz.bug_id = BUG
-        #print bz.bug_id
-        #res = bz.bug()
         
-        #print res.json()
         # Comment Test
+        BUG, commit_message = parseCommitMessage(commit_message)
+        print BUG
+        #DEBUG(commit_message)
         comment = {}
-        comment['comment'] = 'This is a test comment from the Buzzilla Python class'
+        comment['comment'] = commit_message
+        
+        bz.bug_id = BUG
         res = bz.comment(comment)
-        print res.content
+        print res.status_code
         
 #         print bz.comment(BUG, comment='Helo commenting from the Bugzilla Class').json()
     else: 
