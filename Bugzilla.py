@@ -3,23 +3,31 @@ from flask.globals import request
 from findertools import comment
 from IPython.utils._sysinfo import commit
 # Logging in through API
+
+
 def DEBUG(xxx):
     print xxx
 # All future requests will require this authentication token as a parameter
+
+
 class Bugzilla(object):
     """docstring for Bugzilla"""
-    comment_errs = [54,100,101,109,113,114,140,129,130,131,132,133,134,140,601,603,604]
+    comment_errs = [54, 100, 101, 109, 113,
+                    114, 140, 129, 130, 131, 132,
+                    133, 134, 140, 601, 603, 604]
     timeout = 2.0
-    
-    def __init__(self, bzUrl='https://landfill.bugzilla.org/bugzilla-5.0-branch/', bug_id=-1):
+
+    DEFAULT_URL = 'https://landfill.bugzilla.org/bugzilla-5.0-branch/'
+
+    def __init__(self, bzUrl=DEFAULT_URL, bug_id=-1):
         # super(Bugzilla).__init__()
         self._token = dict()
-        self._bzUrl = req.compat.urljoin(bzUrl, 'rest/')
-        self._bug_url = req.compat.urljoin(self._bzUrl, 'bug/')
+        self._bz_url = req.compat.urljoin(bzUrl, 'rest/')
+        self._bug_url = req.compat.urljoin(self._bz_url, 'bug/')
         self._bug_id = bug_id
-        
+
     def login(self, username, password):
-        url = req.compat.urljoin(self._bzUrl, 'login')
+        url = req.compat.urljoin(self._bz_url, 'login')
         login_params = {'login': username, 'password': password}
         DEBUG(url)
         DEBUG(login_params)
@@ -38,13 +46,13 @@ class Bugzilla(object):
     @bug_id.setter
     def bug_id(self, bug_id):
         """
-        Sets the bug_id of the class and returns the 
+        Sets the bug_id of the class and returns the
         respones from a GET request to that bug
         """
         self._bug_id = str(bug_id)
         endpoint_url = '/'.join(['bug', self._bug_id])
-        self._bug_url = req.compat.urljoin(self._bzUrl, endpoint_url)
-        DEBUG(self._bug_url)        
+        self._bug_url = req.compat.urljoin(self._bz_url, endpoint_url)
+        DEBUG(self._bug_url)
 
     def bug(self):
         """
@@ -54,14 +62,15 @@ class Bugzilla(object):
         params.update(self._token)
         res = req.get(self._bug_url, params, timeout=Bugzilla.timeout)
         return res
-    
+
     def to_bugzilla_status(valeo_status):
         """
-        Helper function to convert Bugzilla status 
-        updates in commit message to expected status 
-        values in status field
+        @todo need to identify if this function is really necessary?
+        Helper function to convert Bugzilla status
+        updates in commit message to expected status
+        values in status fiel
         """
-        
+
         if valeo_status == 'started':
             return 'Opened'
         elif valeo_status == 'complete':
@@ -71,7 +80,7 @@ class Bugzilla(object):
         elif valeo_status == 'tested':
             return 'tested'
 
-    def comment(self, comment = None, bug_id = None, work_time=-1):
+    def comment(self, params=None, bug_id=None, work_time=-1):
         """
         Update comment on bug
         @todo: Need to be able to parse changeset to add to comment
@@ -79,27 +88,27 @@ class Bugzilla(object):
         """
         if bug_id:
             self.bug_id = bug_id
-        
-        if comment['comment']:
+
+        if params['comment']:
             ept_url = '/'.join(['bug', self._bug_id, 'comment'])
-            url = req.compat.urljoin(self._bzUrl, ept_url)
-            DEBUG(self._bzUrl)
+            url = req.compat.urljoin(self._bz_url, ept_url)
+            DEBUG(self._bz_url)
             DEBUG(ept_url)
             DEBUG('Login_url: ' + url)
-            comment.update(self._token)
+            params.update(self._token)
             DEBUG(url)
-            DEBUG(comment)
-            res = req.post(url, comment)
-            
+            DEBUG(params)
+            res = req.post(url, params)
+
             return res, self.is_bug_error(res.json())
-        else: 
-           ERROR('The comment is invalid')
-           return False 
-        
+        else:
+            ERROR('The comment is invalid')
+            return False
+
         # This is dead code
         # Set the desired fields to update
         params = dict()
-        params['comment'] = comment
+        params['comment'] = params
         params['is_private'] = False
         params['is_markdown'] = True
         if work_time != -1:
@@ -121,10 +130,14 @@ class Bugzilla(object):
         """
         # change bug status
         bug(bug_id)
-        url = req.compat.urljoin(self._bug_url,'bug/')
+        url = req.compat.urljoin(self._bug_url, 'bug/')
         # Set the desired fields to update
         params = dict()
-        params['comment'] = {'body': comment, 'is_private': False, 'is_markdown': False}
+        params['comment'] = {
+                'body': comment,
+                'is_private': False,
+                'is_markdown': False
+                }
         if status:
             params['status'] = to_bugzilla_status(status)
         if work_time != -1:
@@ -138,7 +151,7 @@ class Bugzilla(object):
         bug(bug_id)
         url = req.compat.urljoin(self.bug_url, 'bug')
 
-    def is_bug_error(self,res_dict):
+    def is_bug_error(self, res_dict):
         """
         Returns true if the input res_dictponse (dictionary) 
         contains a code key which indicates that an 
@@ -173,6 +186,7 @@ def parseCommitMessage(hg_msg):
         return match.group(2), hg_msg
     else:
         return False
+    
     # Ability to get a list of c1omments for a bug specified?
 if __name__ == '__main__':
     from secrets import *
@@ -183,7 +197,8 @@ if __name__ == '__main__':
     BUGZILLA_URL = secrets['BUGZILLA_URL']
     bz = Bugzilla(BUGZILLA_URL)
     login_res = bz.login(LOGIN_PARAMS['login'], LOGIN_PARAMS['password'])
-    BUG = 36912
+    BUG_GT = 36912
+
     with open('hg_comment.txt', 'r') as f:
         commit_message = f.read()
         
@@ -193,13 +208,22 @@ if __name__ == '__main__':
         # Comment Test
         BUG, commit_message = parseCommitMessage(commit_message)
         print BUG
-        #DEBUG(commit_message)
-        comment = {}
-        comment['comment'] = commit_message
+        BUG = str(BUG)
+        
+        if BUG_GT != BUG:
+            raise Exception("""Bug ID's are not equal\n
+                    {} != {}
+                    {} != {}
+                    """.format(BUG_GT, BUG, type(BUG_GT), type(BUG)))
+
+       #DEBUG(commit_message)
+        params = {}
+        params['comment'] = commit_message
         
         bz.bug_id = BUG
-        res = bz.comment(comment)
-        print res.status_code
+        res = bz.comment(params)
+        # @todo need to check the response pattern and handle error cases
+        print res
         
 #         print bz.comment(BUG, comment='Helo commenting from the Bugzilla Class').json()
     else: 

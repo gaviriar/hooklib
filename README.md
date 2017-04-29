@@ -7,8 +7,8 @@ Hooklib is an Apache2 Licensed library, in Python, to help people write hooks fo
 
 Supported hooks phases:
 
-Phase name  | SCM | Available fields
-------------- | ------------- | ----------------
+Phase name          | SCM | Available fields
+------------------- | ------------- | ----------------
 applypatch-msg  | Git | reporoot, head, messagefile
 pre-applypatch  | Git | reporoot, head
 post-applypatch  | Git | reporoot, head
@@ -227,5 +227,3 @@ Before sending a Pull Request please run the tests:
   You have to install mock to run the tests: `sudo pip install mock==1.0.0`
 - To run the integration tests, download run-tests.py from the mercurial repo "https://selenic.com/hg/file/tip/tests/run-tests.py"
 Then you can run the tests with `python run-tests.py test-git.t -l` (I only have tests for git so far)
-
-
