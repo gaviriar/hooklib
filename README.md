@@ -227,3 +227,13 @@ Before sending a Pull Request please run the tests:
   You have to install mock to run the tests: `sudo pip install mock==1.0.0`
 - To run the integration tests, download run-tests.py from the mercurial repo "https://selenic.com/hg/file/tip/tests/run-tests.py"
 Then you can run the tests with `python run-tests.py test-git.t -l` (I only have tests for git so far)
+
+
+Clocker - Time Logger
+- 
+
+## TODO
+
++ add function to reset the time_sheet for a specific project
++ add command line support for usability
++ getters for duration of a project so that it can be autopopulated to a commit message for example
